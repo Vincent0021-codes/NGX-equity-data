@@ -80,10 +80,11 @@ def scrape_and_push():
 
         if headers and rows:
             df = pd.DataFrame(rows, columns=headers)
-            if "Company" in df.columns:
-                df["Company"] = df["Company"].str.replace(r"\s*\[.*?\]", "", regex=True).str.strip()
+        if "Company" in df.columns:
+            df["Company"] = df["Company"].str.strip().str.split(r"\s|\[", n=1).str[0]
             df.to_csv(filename, index=False)
             log_message("Data saved locally.")
+
 
             # === Push to Google Sheets ===
             try:
@@ -97,7 +98,7 @@ def scrape_and_push():
                 client = gspread.authorize(creds)
                 sheet = client.open("NGX Daily Equity Prices").sheet1
                 sheet.clear()
-                sheet.update("A1", [headers] + rows)
+                sheet.update("A1", [df.columns.tolist()] + df.values.tolist())
                 log_message("Data pushed to Google Sheets.")
             except Exception as e:
                 log_message(f"Google Sheets error: {e}")
